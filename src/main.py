@@ -9,7 +9,7 @@
 # II.  Perform Sentiment scoring using BERT
 # III. Scrape reviews from Yelp and Score
 
-# 1. Install and Import Dependencies
+# 1. Import Dependencies
 # ---------------------------------
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 # AutoTokenizer: load the tokenizer that allows to parse through a string 
@@ -22,6 +22,7 @@ import re
 import pandas as pd
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 # from functions import *
 
 
@@ -50,6 +51,7 @@ sentiment = int(torch.argmax(result.logits)) + 1 # torch.argmax(result.logits) g
 # ------------------
 
 url_home = "https://www.yelp.com/biz/tandoori-night-fresno"
+# url_home = "https://www.yelp.de/biz/anand-berlin"
 r = requests.get(url_home, verify=False) # get the HTML of the page
 soup = BeautifulSoup(r.text, "html.parser") # parse the HTML
 
@@ -70,12 +72,6 @@ for i in range(0, math.floor(Review_count / 10) - 1):
     reviews = [result.text for result in results] # extract the text from the HTML elements
     all_reviews.append(reviews)
 
-# Google reviews can be scraped in a similar way
-# r = requests.get("https://www.google.com/maps/place/Tandoori+N%C3%A4chte,+Tandoori+Nights/@52.4876779,13.2981374,14z/data=!4m7!3m6!1s0x47a851472dc72859:0x66f5eb3aa34e833a!8m2!3d52.4962467!4d13.2858839!9m1!1b1") # get the HTML of the page
-# soup = BeautifulSoup(r.text, "html.parser") # parse the HTML
-# regex = re.compile('.*ODSEW-ShBeI NIyLF-haAclf gm2-body-2.*')   # define a regex that matches the class name of the HTML elements that contain the reviews
-# results = soup.find_all("div", {"class_": regex}) # find all HTML elements that match the regex
-# reviews = [result.text for result in results] # extract the text from the HTML elements
 
 # 5. Load Reviews into DataFrame and Score
 # ---------------------------------------
@@ -95,5 +91,36 @@ def sentiment_score(all_reviews):
 df['sentiment'] = df['review'].apply(lambda x: sentiment_score(x[:512])) # apply the function to all reviews and 
 # add the sentiment score to the dataframe; Note that the model can only handle 512 tokens at a time, 
 # so we slice the review to the first 512 characters
+
+
+# 6. Plot Results:
+# ----------------
+
+score_data = df['sentiment'].to_numpy() # convert the sentiment scores to a numpy array
+
+fig = plt.figure(figsize=(7,7)) # create a figure
+ax1 = fig.add_subplot() # add a subplot to the figure
+ax1_bars = [1,2,3,4,5] # define the x-axis 
+
+ # plot the histogram:
+ax1.hist( 
+    score_data, 
+    bins=[x for i in ax1_bars for x in (i-0.4,i+0.4)], 
+    color='#404080'
+    )
+
+ax1.set_xticks(ax1_bars) # set the x-axis ticks
+ax1.set_xticklabels(['1','2','3','4','5']) # set the x-axis labels
+ax1.set_title("Sentiment Analysis") # set the title
+# ax1.set_yscale('log')
+ax1.set_ylabel('Reviews') # set the y-axis label
+
+fig.tight_layout() # make the plot look nice
+# fig.update_layout(font_size=20)
+plt.show() # show the plot
+
+
+
+
 
 1
