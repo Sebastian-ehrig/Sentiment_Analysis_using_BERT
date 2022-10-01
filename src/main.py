@@ -21,7 +21,8 @@ from bs4 import BeautifulSoup # for scraping reviews from Yelp
 import re
 import pandas as pd
 import numpy as np
-from helper import *
+import math
+# from functions import *
 
 
 # 2. Instantiate Model
@@ -30,11 +31,11 @@ tokenizer = AutoTokenizer.from_pretrained("nlptown/bert-base-multilingual-uncase
 
 model = AutoModelForSequenceClassification.from_pretrained("nlptown/bert-base-multilingual-uncased-sentiment")
 
-# 3. Encode and Calculate Sentiment
-# ---------------------------------
+# 3. Encode and Calculate Sentiment (example)
+# -------------------------------------------
 
 # convert a string into a sequence of numbers that can be used as input for the NLP model
-tokens = tokenizer.encode("Naja, war ganz ok", return_tensors="pt")
+tokens = tokenizer.encode("I love this restaurant", return_tensors="pt")
 
 # Note: to convert the tokens back into strings, use "tokenizer.decode(tokens[0])"
 
@@ -48,13 +49,26 @@ sentiment = int(torch.argmax(result.logits)) + 1 # torch.argmax(result.logits) g
 # 4. Collect Reviews
 # ------------------
 
-# scraping reviews of a specific restaurant from yelp:
-
-r = requests.get("https://www.yelp.com/biz/tandoori-night-fresno") # get the HTML of the page
+url_home = "https://www.yelp.com/biz/tandoori-night-fresno"
+r = requests.get(url_home, verify=False) # get the HTML of the page
 soup = BeautifulSoup(r.text, "html.parser") # parse the HTML
-regex = re.compile('.*comment.*')   # define a regex that matches the class name of the HTML elements that contain the reviews
-results = soup.find_all("p", {"class": regex}) # find all HTML elements that match the regex
-reviews = [result.text for result in results] # extract the text from the HTML elements
+
+# find the total number of reviews:
+regex_count = re.compile('.*css-foyide.*')   # define a regex that matches the class name of the HTML elements that contain the reviews
+Review_count = soup.find_all("p", {"class": regex_count}) # find all HTML elements that match the regex
+Review_count = Review_count[0].text
+Review_count = int(Review_count.split()[0]) # get the total number of reviews
+
+# scraping all reviews of a specific restaurant from yelp:
+all_reviews = []
+for i in range(0, math.floor(Review_count / 10) - 1):
+    url = url_home +"?start="+str(10*i)
+    r = requests.get(url, verify=False) # get the HTML of the page
+    soup = BeautifulSoup(r.text, "html.parser") # parse the HTML
+    regex = re.compile('.*comment.*')   # define a regex that matches the class name of the HTML elements that contain the reviews
+    results = soup.find_all("p", {"class": regex}) # find all HTML elements that match the regex
+    reviews = [result.text for result in results] # extract the text from the HTML elements
+    all_reviews.append(reviews)
 
 # Google reviews can be scraped in a similar way
 # r = requests.get("https://www.google.com/maps/place/Tandoori+N%C3%A4chte,+Tandoori+Nights/@52.4876779,13.2981374,14z/data=!4m7!3m6!1s0x47a851472dc72859:0x66f5eb3aa34e833a!8m2!3d52.4962467!4d13.2858839!9m1!1b1") # get the HTML of the page
@@ -62,16 +76,16 @@ reviews = [result.text for result in results] # extract the text from the HTML e
 # regex = re.compile('.*ODSEW-ShBeI NIyLF-haAclf gm2-body-2.*')   # define a regex that matches the class name of the HTML elements that contain the reviews
 # results = soup.find_all("div", {"class_": regex}) # find all HTML elements that match the regex
 # reviews = [result.text for result in results] # extract the text from the HTML elements
-# reviews
 
 # 5. Load Reviews into DataFrame and Score
 # ---------------------------------------
+all_reviews = sum(all_reviews, []) # flatten the list of lists
 
-df = pd.DataFrame(np.array(reviews), columns=["review"]) # load the reviews into a dataframe, with the column name "review"
+df = pd.DataFrame(np.array(all_reviews).flatten(), columns=["review"]) # load the reviews into a dataframe, with the column name "review"
 
-def sentiment_score(review):
+def sentiment_score(all_reviews):
     """Calculate the sentiment score of a review"""
-    tokens = tokenizer.encode(review, return_tensors="pt")
+    tokens = tokenizer.encode(all_reviews, return_tensors="pt")
     result = model(tokens)
     sentiment = int(torch.argmax(result.logits)) + 1
     return sentiment
@@ -81,3 +95,5 @@ def sentiment_score(review):
 df['sentiment'] = df['review'].apply(lambda x: sentiment_score(x[:512])) # apply the function to all reviews and 
 # add the sentiment score to the dataframe; Note that the model can only handle 512 tokens at a time, 
 # so we slice the review to the first 512 characters
+
+1
