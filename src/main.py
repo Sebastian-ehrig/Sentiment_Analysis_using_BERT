@@ -23,6 +23,7 @@ import pandas as pd
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from pylab import text
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -123,6 +124,12 @@ ax1.set_title("Sentiment Analysis", size=16, fontweight="bold") # set the title
 ax1.set_ylabel('Reviews', size=16) # set the y-axis label
 ax1.set_xlabel('Sentiment Score', size=16) # set the x-axis label
 
+text(0.5, 0.5,'Mean Score: ' + str(round(np.mean(score_data), 2)),
+     horizontalalignment='center',
+     verticalalignment='center',
+     fontsize=20,
+     transform = ax1.transAxes)
+
 fig.tight_layout() # make the plot look nice
 # fig.update_layout(font_size=20)
 plt.show() # show the plot
@@ -130,6 +137,8 @@ plt.show() # show the plot
 # ----------------------------------------------------------
 # PLot sentiment score as a function of review index (~time)
 # ----------------------------------------------------------
+
+1
 
 fig2 = plt.figure(figsize=(14,5)) # create a figure
 ax2 = fig2.add_subplot() # add a subplot to the figure
