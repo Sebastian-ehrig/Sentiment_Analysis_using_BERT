@@ -23,8 +23,9 @@ import pandas as pd
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-# from functions import *
 
+import warnings
+warnings.filterwarnings("ignore")
 
 # 2. Instantiate Model
 # --------------------
@@ -70,6 +71,7 @@ for i in range(0, math.floor(Review_count / 10) - 1):
     regex = re.compile('.*comment.*')   # define a regex that matches the class name of the HTML elements that contain the reviews
     results = soup.find_all("p", {"class": regex}) # find all HTML elements that match the regex
     reviews = [result.text for result in results] # extract the text from the HTML elements
+    print(i)
     all_reviews.append(reviews)
 
 
@@ -92,10 +94,13 @@ df['sentiment'] = df['review'].apply(lambda x: sentiment_score(x[:512])) # apply
 # add the sentiment score to the dataframe; Note that the model can only handle 512 tokens at a time, 
 # so we slice the review to the first 512 characters
 
-
+# ---------------------------------------
 # 6. Plot Results:
-# ----------------
+# ---------------------------------------
 
+# ----------------------------------------------------------
+# Plot total number of scores
+# ----------------------------------------------------------
 score_data = df['sentiment'].to_numpy() # convert the sentiment scores to a numpy array
 
 fig = plt.figure(figsize=(7,7)) # create a figure
@@ -111,16 +116,38 @@ ax1.hist(
 
 ax1.set_xticks(ax1_bars) # set the x-axis ticks
 ax1.set_xticklabels(['1','2','3','4','5']) # set the x-axis labels
-ax1.set_title("Sentiment Analysis") # set the title
+ax1.tick_params(axis='both', which='major', labelsize=12)
+
+ax1.set_title("Sentiment Analysis", size=16, fontweight="bold") # set the title
 # ax1.set_yscale('log')
-ax1.set_ylabel('Reviews') # set the y-axis label
+ax1.set_ylabel('Reviews', size=16) # set the y-axis label
+ax1.set_xlabel('Sentiment Score', size=16) # set the x-axis label
 
 fig.tight_layout() # make the plot look nice
 # fig.update_layout(font_size=20)
 plt.show() # show the plot
 
+# ----------------------------------------------------------
+# PLot sentiment score as a function of review index (~time)
+# ----------------------------------------------------------
 
+fig2 = plt.figure(figsize=(14,5)) # create a figure
+ax2 = fig2.add_subplot() # add a subplot to the figure
+ax2.plot(
+    np.arange(0, len(score_data), 1) , 
+    score_data, 
+    color='#404080',
+    ls='--', 
+    marker='.', 
+    ms=10
+    ) # plot the sentiment scores over time
+plt.hlines(3, 0, len(score_data), color='red')
+ax2.tick_params(axis='both', which='major', labelsize=12)
+ax2.set_title("Sentiment Analysis", size=16, fontweight="bold") # set the title
+ax2.set_ylabel('Sentiment Score', size=16) # set the y-axis label
+ax2.set_xlabel('Review index', size=16) # set the x-axis label
 
-
-
+fig2.tight_layout() # make the plot look nice
+# fig.update_layout(font_size=20)
+plt.show() # show the plot
 1
